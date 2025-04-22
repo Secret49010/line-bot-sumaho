@@ -1,3 +1,1 @@
-flask
-line-bot-sdk
-openai
+web: uvicorn main:app --host=0.0.0.0 --port=${PORT:-5000}
