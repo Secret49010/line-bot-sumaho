@@ -6,18 +6,18 @@ from linebot.v3.webhooks.events import MessageEvent, TextMessageContent
 from linebot.v3.messaging import MessagingApi, Configuration, ApiClient, ReplyMessageRequest, TextMessage
 import openai
 
-# 環境変数からキーを取得
+# 環境変数取得
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# 各種インスタンスを作成
+# インスタンス生成
 app = FastAPI()
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 openai.api_key = OPENAI_API_KEY
 
-# LINE webhook エンドポイント
+# Webhookエンドポイント
 @app.post("/callback")
 async def callback(request: Request):
     signature = request.headers.get("x-line-signature")
@@ -31,13 +31,13 @@ async def callback(request: Request):
 
     return PlainTextResponse("OK")
 
-# イベント処理部分
+# メッセージ受信時の処理
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     user_message = event.message.text
     reply_token = event.reply_token
 
-    # ChatGPT API で応答生成
+    # ChatGPT API 呼び出し
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -47,7 +47,7 @@ def handle_message(event):
     )
     reply_text = response["choices"][0]["message"]["content"]
 
-    # LINE に返答
+    # LINEへ返信
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
         line_bot_api.reply_message(
@@ -57,15 +57,7 @@ def handle_message(event):
             )
         )
 
-# 動作確認用
+# 動作確認用のルート
 @app.get("/")
 def root():
     return {"message": "LINE bot is running."}
-
-            )
-
-    return "OK"
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
