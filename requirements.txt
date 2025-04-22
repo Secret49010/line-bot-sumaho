@@ -1,3 +1,5 @@
-flask
+fastapi
+uvicorn
+starlette
 line-bot-sdk
 openai
