@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from linebot.v3.messaging import MessagingApiClient
+from linebot.v3.messaging import MessagingApi
 from linebot.v3.webhook import WebhookHandler
 from linebot.v3.models import MessageEvent, TextMessageContent, ReplyMessageRequest, TextMessage
 from starlette.responses import PlainTextResponse
@@ -13,7 +13,7 @@ LINE_CHANNEL_ACCESS_TOKEN = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
 LINE_CHANNEL_SECRET = os.environ["LINE_CHANNEL_SECRET"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
-line_bot_api = MessagingApiClient(LINE_CHANNEL_ACCESS_TOKEN)
+line_bot_api = MessagingApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 openai.api_key = OPENAI_API_KEY
 
