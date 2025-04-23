@@ -1,13 +1,13 @@
 import os
 import openai
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import PlainTextResponse  # ← 追加
 from linebot.v3.messaging import Configuration, ApiClient, MessagingApi
 from linebot.v3.webhook import WebhookHandler
 from linebot.v3.webhook_models import MessageEvent, TextMessageContent
 
 app = FastAPI()
 
-# 環境変数から読み込む
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -38,9 +38,8 @@ async def callback(request: Request):
 def handle_message(event: MessageEvent):
     user_message = event.message.text
 
-    # ChatGPT に問い合わせ
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",  # 必要に応じて "gpt-4" に変更可能
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "あなたはスマホの専門家です。"},
             {"role": "user", "content": user_message}
@@ -55,7 +54,3 @@ def handle_message(event: MessageEvent):
             reply_token=event.reply_token,
             messages=[{"type": "text", "text": reply_text}]
         )
-
-                )
-
-    return PlainTextResponse("OK", status_code=200)
