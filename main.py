@@ -40,14 +40,3 @@ def handle_message(event: MessageEvent):
         messages=[TextMessage(text=f"受け取ったメッセージ: {text}")]
     )
     line_bot_api.reply_message(reply)
-
-    )
-
-    reply_text = response.choices[0].message["content"].strip()
-
-    with ApiClient(configuration) as api_client:
-        line_bot_api = MessagingApi(api_client)
-        line_bot_api.reply_message(
-            reply_token=event.reply_token,
-            messages=[{"type": "text", "text": reply_text}]
-        )
