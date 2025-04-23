@@ -41,3 +41,7 @@ def handle_message(event: MessageEvent):
             messages=[TextMessage(text=f"受け取ったメッセージ: {text}")]
         )
         line_bot_api.reply_message(reply)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
