@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import PlainTextResponse
-from linebot.v3.webhooks.parser import WebhookParser
+from linebot.v3.webhooks import WebhookParser
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from linebot.v3.messaging import Configuration, MessagingApi, ApiClient, ReplyMessageRequest, TextMessage
 from openai import OpenAI
