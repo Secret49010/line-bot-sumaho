@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from linebot.v3.webhook import WebhookHandler
-from linebot.v3.models import MessageEvent, TextMessageContent
 from linebot.v3.messaging import MessagingApi, Configuration
 from linebot.v3.messaging.models import ReplyMessageRequest, TextMessage
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
 import os
 
 app = FastAPI()
@@ -30,13 +30,14 @@ async def callback(request: Request):
 
     return "OK"
 
-@handler.add(MessageEvent, message=TextMessageContent)
+@handler.add(MessageEvent)
 def handle_message(event: MessageEvent):
-    text = event.message.text
-    reply_token = event.reply_token
+    if isinstance(event.message, TextMessageContent):
+        text = event.message.text
+        reply_token = event.reply_token
 
-    reply = ReplyMessageRequest(
-        reply_token=reply_token,
-        messages=[TextMessage(text=f"受け取ったメッセージ: {text}")]
-    )
-    line_bot_api.reply_message(reply)
+        reply = ReplyMessageRequest(
+            reply_token=reply_token,
+            messages=[TextMessage(text=f"受け取ったメッセージ: {text}")]
+        )
+        line_bot_api.reply_message(reply)
