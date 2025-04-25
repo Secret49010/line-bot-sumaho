@@ -1,62 +1,70 @@
+import os
+import openai
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import PlainTextResponse
-from linebot import LineBotApi, WebhookHandler
-from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
-from openai import OpenAI
-import os
+from linebot.v3.messaging import (
+    MessagingApi, Configuration, ApiClient,
+    ReplyMessageRequest, TextMessage
+)
+from linebot.v3.webhook import WebhookHandler
+from linebot.v3.webhook.models import MessageEvent, TextMessageContent
+from linebot.v3.exceptions import InvalidSignatureError
 
-app = FastAPI()
-
-# 環境変数から取得（Render.comの環境変数設定に追加してください）
+# 環境変数の読み込み
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-if not LINE_CHANNEL_SECRET or not LINE_CHANNEL_ACCESS_TOKEN or not OPENAI_API_KEY:
-    raise ValueError("環境変数が設定されていません")
+# FastAPIインスタンス
+app = FastAPI()
 
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(LINE_CHANNEL_SECRET)
-openai = OpenAI(api_key=OPENAI_API_KEY)
+# LINE SDK 設定
+configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(channel_secret=LINE_CHANNEL_SECRET)
+openai.api_key = OPENAI_API_KEY
 
+# ルート確認用
+@app.get("/")
+def read_root():
+    return {"message": "LINE Bot is running!"}
 
+# コールバックエンドポイント
 @app.post("/callback")
 async def callback(request: Request):
-    signature = request.headers.get("X-Line-Signature")
+    signature = request.headers.get("X-Line-Signature", "")
     body = await request.body()
-    body_str = body.decode("utf-8")
 
     try:
-        handler.handle(body_str, signature)
+        handler.handle(body.decode("utf-8"), signature)
     except InvalidSignatureError:
         raise HTTPException(status_code=400, detail="Invalid signature")
 
-    return PlainTextResponse("OK")
+    return PlainTextResponse("OK", status_code=200)
 
-
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
+# メッセージイベント処理
+@handler.add(MessageEvent, message=TextMessageContent)
+def handle_message(event: MessageEvent):
     user_message = event.message.text
 
-    # OpenAIへ問い合わせ
+    # OpenAI API に問い合わせ
     try:
-        response = openai.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}],
-            temperature=0.7,
+            messages=[
+                {"role": "system", "content": "あなたはスマホの先生です。"},
+                {"role": "user", "content": user_message}
+            ]
         )
-        reply_text = response.choices[0].message.content.strip()
+        ai_response = response.choices[0].message["content"]
     except Exception as e:
-        reply_text = f"OpenAIの応答に失敗しました: {e}"
+        ai_response = "OpenAI応答エラー: " + str(e)
 
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=reply_text)
-    )
-
-
-@app.get("/")
-def root():
-    return {"message": "LINE Bot is running"}
-
+    # LINEに返信
+    with ApiClient(configuration) as api_client:
+        line_bot_api = MessagingApi(api_client)
+        line_bot_api.reply_message(
+            ReplyMessageRequest(
+                reply_token=event.reply_token,
+                messages=[TextMessage(text=ai_response)]
+            )
+        )
